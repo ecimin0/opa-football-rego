@@ -1,30 +1,26 @@
-package opa_football.scoring
+package play
 
 import future.keywords.if
 import future.keywords.in
 
-# these rules are implemented in python alongside the rest of the bot logic, but
-# why not do a POC in OPA/Rego?
+# these rules are identical to those in the Discord prediction bot's logic,
+# but expressed via Rego instead
 
-# no offense meant in particular to Leicester FC, this just happened to be the 
-# match I grabbed from the API to experiment with
+# input is the representation of the user's prediction data
 
-# Rules
+# data represents the information about each fixture needed to do the scoring
 # ---------------------------------------------------------
 
 # 2 points – correct result (W/D/L)
 match_winner["home"] {
-	# 	data.goals_home > data.goals_away
 	data.teams.home.winner == true
 }
 
 match_winner["away"] {
-	# 	data.goals_away > data.goals_home
 	data.teams.away.winner == true
 }
 
 match_winner["draw"] {
-	#     data.goals_home == data.goals_away
 	data.teams.home.winner == false
 	data.teams.away.winner == false
 }
@@ -41,17 +37,13 @@ predict_winner["draw"] {
 	data.goals_home == data.goals_away
 }
 
-# correct_result[correct_result_score] {
-# 	predict_winner == match_winner
-# 	correct_result_score = 2
-# }
-
 correct_result := 2 if {
+	predict_winner[_]
+    match_winner[_]
 	predict_winner == match_winner
-} else := 0 if {
+} else := 0 {
 	true
 }
-
 # ---------------------------------------------------------
 
 # 2 points – correct number of Arsenal goals
@@ -68,14 +60,14 @@ arsenal_away if {
 correct_arsenal_goals_home := 2 if {
 	arsenal_home
 	input.home_goals == data.goals_home
-} else := 0 if {
+} else := 0 {
 	true
 }
 
 correct_arsenal_goals_away := 2 if {
 	arsenal_away
 	input.away_goals == data.goals_away
-} else := 0 if {
+} else := 0 {
 	true
 }
 
@@ -85,14 +77,14 @@ correct_arsenal_goals_away := 2 if {
 correct_goals_against_home := 1 if {
 	arsenal_home
 	input.away_goals == data.goals.away
-} else := 0 if {
+} else := 0 {
 	true
 }
 
 correct_goals_against_away := 1 if {
 	arsenal_away
 	input.home_goals == data.goals.home
-} else := 0 if {
+} else := 0 {
 	true
 }
 
@@ -116,19 +108,19 @@ expanded_predict_scorers := [final |
 
 scorers_union := predict_scorers_set & match_scorers_set
 
-getCountPlayer(name, listCheck) := x if {
-	x := count([x |
+getCountPlayer(name, listCheck) := x {
+    x := count([x | 
 		name == listCheck[x]
-	])
+    ])
 }
 
-playerPoints(name, predict, actual) := x if {
+playerPoints(name, predict, actual) := x {
 	x := min([getCountPlayer(name, predict), getCountPlayer(name, actual)])
 }
 
 final_scorers_correct := [x |
 	pn := scorers_union[_]
-	x := playerPoints(pn, expanded_predict_scorers, match_scorers)
+    x := playerPoints(pn, expanded_predict_scorers, match_scorers)
 ]
 
 correct_final_score_for_scorers := sum(final_scorers_correct)
@@ -152,7 +144,7 @@ match_scorers_set := {k | k := match_scorers[_]}
 
 correct_all_scorers := 2 if {
 	sort(expanded_predict_scorers) == sort(match_scorers)
-} else := 0 if {
+} else := 0 {
 	true
 }
 
@@ -180,7 +172,7 @@ predict_fgs := [k.real_name |
 
 correct_fgs := 1 if {
 	predict_fgs[0] == match_scorers[0]
-} else := 0 if {
+} else := 0 {
 	true
 }
 
@@ -190,7 +182,7 @@ correct_fgs := 1 if {
 final_prediction_score := ((((((correct_all_scorers + correct_arsenal_goals_away) + correct_arsenal_goals_home) + correct_fgs) + correct_goals_against_away) + correct_goals_against_home) + correct_final_score_for_scorers) + correct_result if {
 	not no_points_too_many_goals_home
 	not no_points_too_many_goals_away
-} else := (((correct_arsenal_goals_away + correct_arsenal_goals_home) + correct_goals_against_away) + correct_goals_against_home) + correct_result if {
+} else := (((correct_arsenal_goals_away + correct_arsenal_goals_home) + correct_goals_against_away) + correct_goals_against_home) + correct_result {
 	true
 }
 
