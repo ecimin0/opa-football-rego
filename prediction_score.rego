@@ -1,4 +1,4 @@
-package prediction_score
+package scoring
 
 import future.keywords.if
 import future.keywords.in
