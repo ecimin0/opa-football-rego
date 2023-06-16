@@ -1,5 +1,3 @@
-package scoring_predict
-
 import future.keywords.if
 import future.keywords.in
 import future.keywords.every
