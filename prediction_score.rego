@@ -1,4 +1,4 @@
-package opa_football/scoring.prediction
+package "opa_football/scoring.prediction"
 
 import future.keywords.if
 import future.keywords.in
