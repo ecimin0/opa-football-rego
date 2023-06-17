@@ -27,15 +27,15 @@ input_valid := true if {
 } else := false
 
 data_valid := true if {
-	is_number(data.fixture.goals_home)
-    is_number(data.fixture.goals_away)
-    is_boolean(data.fixture.teams.home.winner)
-    is_boolean(data.fixture.teams.away.winner)
-    is_string(data.fixture.home_name)
-    is_string(data.fixture.away_name)
+	is_number(fixture.goals_home)
+    is_number(fixture.goals_away)
+    is_boolean(fixture.teams.home.winner)
+    is_boolean(fixture.teams.away.winner)
+    is_string(fixture.home_name)
+    is_string(fixture.away_name)
     
-    is_array(data.fixture.events)
-	every event in data.fixture.events {
+    is_array(fixture.events)
+	every event in fixture.events {
 		is_string(event.type)
 		is_string(event.player.name)
         is_string(event.team.name)
@@ -44,11 +44,11 @@ data_valid := true if {
 } else := false
 
 main_team_in_fixture := true if {
-	input.main_team == lower(data.fixture.teams.home.name)
+	input.main_team == lower(fixture.teams.home.name)
 }
 
 main_team_in_fixture := true if {
-    input.main_team == lower(data.fixture.teams.away.name)
+    input.main_team == lower(fixture.teams.away.name)
 }
 
 # these rules are identical to those in the Discord prediction bot's logic,
@@ -56,16 +56,16 @@ main_team_in_fixture := true if {
 # ---------------------------------------------------------
 # 2 points – correct result (W/D/L)
 match_winner["home"] {
-	data.fixture.teams.home.winner == true
+	fixture.teams.home.winner == true
 }
 
 match_winner["away"] {
-	data.fixture.teams.away.winner == true
+	fixture.teams.away.winner == true
 }
 
 match_winner["draw"] {
-	data.fixture.teams.home.winner == false
-	data.fixture.teams.away.winner == false
+	fixture.teams.home.winner == false
+	fixture.teams.away.winner == false
 }
 
 predict_winner["home"] {
@@ -73,11 +73,11 @@ predict_winner["home"] {
 }
 
 predict_winner["away"] {
-	data.fixture.goals_away > data.fixture.goals_home
+	fixture.goals_away > fixture.goals_home
 }
 
 predict_winner["draw"] {
-	data.fixture.goals_home == data.fixture.goals_away
+	fixture.goals_home == fixture.goals_away
 }
 
 correct_result := 2 if {
@@ -89,23 +89,23 @@ correct_result := 2 if {
 
 # 2 points – correct number of main team goals
 main_team_home if {
-	data.fixture.home_name == input.main_team
+	fixture.home_name == input.main_team
 }
 
 main_team_away if {
-	data.fixture.away_name == input.main_team
+	fixture.away_name == input.main_team
 }
 
 correct_main_team_goals_home := 2 if {
 	main_team_home
-	input.home_goals == data.fixture.goals_home
+	input.home_goals == fixture.goals_home
 } else := 0 {
 	true
 }
 
 correct_main_team_goals_away := 2 if {
 	main_team_away
-	input.away_goals == data.fixture.goals_away
+	input.away_goals == fixture.goals_away
 } else := 0 {
 	true
 }
@@ -115,14 +115,14 @@ correct_main_team_goals_away := 2 if {
 # 1 point – correct number of goals conceded
 correct_goals_against_home := 1 if {
 	main_team_home
-	input.away_goals == data.fixture.goals_away
+	input.away_goals == fixture.goals_away
 } else := 0 {
 	true
 }
 
 correct_goals_against_away := 1 if {
 	main_team_away
-	input.home_goals == data.fixture.goals_home
+	input.home_goals == fixture.goals_home
 } else := 0 {
 	true
 }
@@ -174,7 +174,7 @@ predict_scorers := [k.real_name | k := input.scorers[_]]
 predict_scorers_set := {k | k := predict_scorers[_]}
 
 match_scorers := [k.player.name |
-	k := data.fixture.events[_]
+	k := fixture.events[_]
 	k.type == "Goal"
 	lower(k.team.name) == input.main_team
 ]
@@ -193,12 +193,12 @@ correct_all_scorers := 2 if {
 # No points for any part of the prediction related to scorers or fgs if predicted goals > actual goals + 4
 no_points_too_many_goals_home if {
 	main_team_home
-	input.home_goals - data.fixture.goals_home >= 4
+	input.home_goals - fixture.goals_home >= 4
 }
 
 no_points_too_many_goals_away if {
 	main_team_away
-	input.away_goals - data.fixture.goals_away >= 4
+	input.away_goals - fixture.goals_away >= 4
 }
 
 # ---------------------------------------------------------
